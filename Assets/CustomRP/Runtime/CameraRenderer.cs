@@ -63,7 +63,7 @@ public partial class CameraRenderer
         DrawVisibleGeometry();
 
 #if UNITY_EDITOR
-        //绘制SRP不支持的Shader
+        //绘制SRP不支持的Shader 将其显示为粉色
         DrawUnsupportedShaders();
 
         //绘制辅助线框
@@ -96,8 +96,12 @@ public partial class CameraRenderer
         //在清除渲染目标前设置相机属性 实现快速清除
         context.SetupCameraProperties(camera);
 
+        CameraClearFlags flag = camera.clearFlags;
+
         //清除旧渲染数据
-        buffer.ClearRenderTarget(true, true, Color.clear);
+        //CameraClearFlags枚举的清除量是递减的
+        buffer.ClearRenderTarget(flag <= CameraClearFlags.Depth, flag == CameraClearFlags.Color,
+            flag == CameraClearFlags.Color?camera.backgroundColor.linear:Color.clear);
 
         buffer.BeginSample(sampleName);
 
@@ -129,12 +133,11 @@ public partial class CameraRenderer
         //设置要渲染的渲染队列
         FilteringSettings fs = new FilteringSettings(RenderQueueRange.opaque);
 
-        //先绘制不透明物体
+        //先绘制不透明物体和天空盒
         ss.criteria = SortingCriteria.CommonOpaque;
         ds.sortingSettings = ss;
         context.DrawRenderers(cullingResults,ref ds,ref fs);
 
-        //再绘制天空盒
         context.DrawSkybox(camera);
 
         //最后绘制半透明物体
