@@ -11,6 +11,7 @@ public partial class CameraRenderer
     private const string bufferName = "Render Camera";
 
     private static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
+    private static ShaderTagId litShaderTagId = new ShaderTagId("CustomLit");
 
 #if UNITY_EDITOR
     private string sampleName;
@@ -131,6 +132,7 @@ public partial class CameraRenderer
         DrawingSettings ds = new DrawingSettings(unlitShaderTagId,ss);
         ds.enableDynamicBatching = useDynamicBatching;
         ds.enableInstancing = useGPUInstancing;
+        ds.SetShaderPassName(1, litShaderTagId);
 
         //设置要渲染的渲染队列
         FilteringSettings fs = new FilteringSettings(RenderQueueRange.opaque);
