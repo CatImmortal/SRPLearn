@@ -37,7 +37,7 @@ public partial class CameraRenderer
     /// <summary>
     /// 相机渲染
     /// </summary>
-    public void Render(ScriptableRenderContext context,Camera camera)
+    public void Render(ScriptableRenderContext context,Camera camera, bool useDynamicBatching, bool useGPUInstancing)
     {
         this.context = context;
         this.camera = camera;
@@ -60,7 +60,7 @@ public partial class CameraRenderer
         Setup();
 
         //绘制几何体
-        DrawVisibleGeometry();
+        DrawVisibleGeometry(useDynamicBatching,useGPUInstancing);
 
 #if UNITY_EDITOR
         //绘制SRP不支持的Shader 将其显示为粉色
@@ -121,7 +121,7 @@ public partial class CameraRenderer
     /// <summary>
     /// 绘制几何体
     /// </summary>
-    private void DrawVisibleGeometry()
+    private void DrawVisibleGeometry(bool useDynamicBatching,bool useGPUInstancing)
     {
         //设置绘制顺序和指定渲染相机
         SortingSettings ss = new SortingSettings(camera);
@@ -129,6 +129,8 @@ public partial class CameraRenderer
 
         //设置渲染的Pass和排序模式
         DrawingSettings ds = new DrawingSettings(unlitShaderTagId,ss);
+        ds.enableDynamicBatching = useDynamicBatching;
+        ds.enableInstancing = useGPUInstancing;
 
         //设置要渲染的渲染队列
         FilteringSettings fs = new FilteringSettings(RenderQueueRange.opaque);
