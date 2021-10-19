@@ -13,6 +13,10 @@
         [Toggle(_CLIPPING)]
         _Clipping("Alpha Clipping",Float) = 0
 
+        //控制是否进行预乘
+        [Toggle(_PREMULTIPLY_ALPHA)]
+        _PremulAlpha("Premultiply Alpha",Float) = 0
+
         [Enum(UnityEngine.Rendering.BlendMode)]
         _SrcBlend("Src Blend",Float) = 1
 
@@ -22,6 +26,12 @@
         //是否写入深度
         [Enum(Off, 0, On, 1)]
         _ZWrite("Z Write",Float) = 1
+
+        //金属度
+        _Metallic("Metallic",Range(0,1)) = 0
+
+        //光滑度
+        _Smoothness("Smoothness",Range(0,1)) = 0.5
     }
     SubShader
     {
@@ -41,6 +51,7 @@
             HLSLPROGRAM
             #pragma target 3.5
             #pragma shader_feature _CLIPPING
+            #pragma shader_feature _PREMULTIPLY_ALPHA
 
             //GPU实例化
             #pragma multi_compile_instancing
