@@ -21,6 +21,7 @@ public partial class CameraRenderer
 
     private ScriptableRenderContext context;
     private Camera camera;
+    private Lighting lighting = new Lighting();
 
     /// <summary>
     /// 渲染命令缓冲区
@@ -59,6 +60,9 @@ public partial class CameraRenderer
 
         //初始设置
         Setup();
+
+        //设置光源数据
+        lighting.SetUp(context,cullingResults);
 
         //绘制几何体
         DrawVisibleGeometry(useDynamicBatching,useGPUInstancing);

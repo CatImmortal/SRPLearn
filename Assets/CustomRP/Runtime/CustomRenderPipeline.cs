@@ -18,6 +18,9 @@ public class CustomRenderPipeline : RenderPipeline
         this.useDynamicBatching = useDynamicBatching;
         this.useGPUInstancing = useGPUInstancing;
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
+
+        //灯光强制转换为线性空间
+        GraphicsSettings.lightsUseLinearIntensity = true;
     }
 
     /// <summary>

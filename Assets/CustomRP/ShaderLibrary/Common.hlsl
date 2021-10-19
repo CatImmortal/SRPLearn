@@ -4,7 +4,7 @@
 //1.包含SRP的Common.hlsl
 //2.包含自定义的UnityInput.hlsl
 //3.用宏定义统一进行替换
-//最后包含SpaceTransforms.hlsl
+//最后包含UnityInstancing和SpaceTransforms.hlsl
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "UnityInput.hlsl"

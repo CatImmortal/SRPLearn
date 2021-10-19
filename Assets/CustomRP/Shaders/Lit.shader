@@ -39,7 +39,7 @@
             ZWrite[_ZWrite]
 
             HLSLPROGRAM
-            
+            #pragma target 3.5
             #pragma shader_feature _CLIPPING
 
             //GPU实例化
