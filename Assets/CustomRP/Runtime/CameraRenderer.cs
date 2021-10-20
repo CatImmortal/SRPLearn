@@ -39,7 +39,7 @@ public partial class CameraRenderer
     /// <summary>
     /// 相机渲染
     /// </summary>
-    public void Render(ScriptableRenderContext context,Camera camera, bool useDynamicBatching, bool useGPUInstancing)
+    public void Render(ScriptableRenderContext context,Camera camera, bool useDynamicBatching, bool useGPUInstancing, ShadowSettings shadowSetting)
     {
         this.context = context;
         this.camera = camera;
@@ -52,8 +52,8 @@ public partial class CameraRenderer
         PrepareBuffer();
 #endif
 
-        //剔除
-        if (!Cull())
+        //剔除 将阴影最大距离传入
+        if (!Cull(shadowSetting.MaxDistance))
         {
             return;
         }
@@ -62,7 +62,7 @@ public partial class CameraRenderer
         Setup();
 
         //设置光源数据
-        lighting.SetUp(context,cullingResults);
+        lighting.SetUp(context,cullingResults,shadowSetting);
 
         //绘制几何体
         DrawVisibleGeometry(useDynamicBatching,useGPUInstancing);
@@ -82,10 +82,13 @@ public partial class CameraRenderer
     /// <summary>
     /// 剔除
     /// </summary>
-    private bool Cull()
+    private bool Cull(float maxShadowDistance)
     {
         if (camera.TryGetCullingParameters(out ScriptableCullingParameters p))
         {
+            //最大阴影距离和相机远平面比较，取最小者作为阴影距离
+            p.shadowDistance = Mathf.Min(maxShadowDistance, camera.farClipPlane);
+
             cullingResults = context.Cull(ref p);
             return true;
         }

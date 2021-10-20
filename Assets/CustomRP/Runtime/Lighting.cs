@@ -44,7 +44,7 @@ public class Lighting
 
 
 
-    public void SetUp(ScriptableRenderContext context,CullingResults cullingResults)
+    public void SetUp(ScriptableRenderContext context,CullingResults cullingResults, ShadowSettings shadowSetting)
     {
         this.cullingResults = cullingResults;
 

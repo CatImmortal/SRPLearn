@@ -12,11 +12,14 @@ public class CustomRenderPipeline : RenderPipeline
 
     private bool useDynamicBatching;
     private bool useGPUInstancing;
+    private ShadowSettings shadowSetting;
 
-    public CustomRenderPipeline(bool useDynamicBatching, bool useGPUInstancing,bool useSRPBatcher)
+    public CustomRenderPipeline(bool useDynamicBatching, bool useGPUInstancing,bool useSRPBatcher, ShadowSettings shadowSetting)
     {
         this.useDynamicBatching = useDynamicBatching;
         this.useGPUInstancing = useGPUInstancing;
+        this.shadowSetting = shadowSetting;
+
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
 
         //灯光强制转换为线性空间
@@ -30,7 +33,7 @@ public class CustomRenderPipeline : RenderPipeline
     {
         foreach (Camera camera in cameras)
         {
-            renderer.Render(context, camera,useDynamicBatching,useGPUInstancing);
+            renderer.Render(context, camera,useDynamicBatching,useGPUInstancing,shadowSetting);
         }
     }
 }
