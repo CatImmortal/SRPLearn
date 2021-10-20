@@ -63,6 +63,35 @@
             ENDHLSL
            
         }
+
+        //阴影投射Pass
+        Pass
+        {
+            Tags
+            {
+                "LightMode" = "ShadowCaster"
+            }
+
+            //不写入任何颜色数据
+            ColorMask 0
+
+            Blend[_SrcBlend][_DstBlend]
+            ZWrite[_ZWrite]
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma shader_feature _CLIPPING
+
+            //GPU实例化
+            #pragma multi_compile_instancing
+
+            #pragma vertex ShadowCasterPassVertex
+            #pragma fragment ShadowCasterPassFragment
+            #include "ShadowCasterPass.hlsl"
+
+            ENDHLSL
+           
+        }
     }
 
     CustomEditor "CustomShaderGUI"

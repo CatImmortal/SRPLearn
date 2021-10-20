@@ -23,7 +23,7 @@ public struct Directional
 }
 
 /// <summary>
-/// 阴影设置
+/// 阴影配置
 /// </summary>
 [Serializable]
 public class ShadowSettings

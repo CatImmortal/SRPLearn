@@ -58,11 +58,17 @@ public partial class CameraRenderer
             return;
         }
 
+        buffer.BeginSample(sampleName);
+        ExecuteBuffer();
+
+        //设置光源与阴影数据
+        lighting.SetUp(context, cullingResults, shadowSetting);
+
+        buffer.EndSample(sampleName);
+
         //初始设置
         Setup();
 
-        //设置光源数据
-        lighting.SetUp(context,cullingResults,shadowSetting);
 
         //绘制几何体
         DrawVisibleGeometry(useDynamicBatching,useGPUInstancing);
@@ -74,6 +80,9 @@ public partial class CameraRenderer
         //绘制辅助线框
         DrawGizmos();
 #endif
+
+        //清理阴影
+        lighting.Cleanup();
 
         //提交渲染命令
         Submit();
@@ -112,9 +121,8 @@ public partial class CameraRenderer
             flag == CameraClearFlags.Color?camera.backgroundColor.linear:Color.clear);
 
         buffer.BeginSample(sampleName);
-
         ExecuteBuffer();
-       
+
     }
 
     /// <summary>

@@ -4,6 +4,9 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+/// <summary>
+/// 光照类，负责发送光源数据给Shader
+/// </summary>
 public class Lighting
 {
     //private static int dirLightColorId = Shader.PropertyToID("_DirectionalLightColor");
@@ -28,11 +31,6 @@ public class Lighting
     /// </summary>
     private static Vector4[] dirLightDirections = new Vector4[maxDirLightCount];
 
-    /// <summary>
-    /// 相机剔除结果
-    /// </summary>
-    private CullingResults cullingResults;
-
     private const string bufferName = "Lighting";
 
     private CommandBuffer buffer = new CommandBuffer()
@@ -40,6 +38,15 @@ public class Lighting
         name = bufferName
     };
 
+    /// <summary>
+    /// 相机剔除结果
+    /// </summary>
+    private CullingResults cullingResults;
+
+    /// <summary>
+    /// 阴影对象
+    /// </summary>
+    private Shadows shadows = new Shadows();
     
 
 
@@ -50,12 +57,23 @@ public class Lighting
 
         buffer.BeginSample(bufferName);
 
+        //初始化阴影数据
+        shadows.Setup(context, cullingResults, shadowSetting);
+
         //发送光源数据给shader
         SetupLights();
+
+        //渲染阴影
+        shadows.Render();
 
         buffer.EndSample(bufferName);
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
+    }
+
+    public void Cleanup()
+    {
+        shadows.Cleanup();
     }
 
     /// <summary>
@@ -63,7 +81,7 @@ public class Lighting
     /// </summary>
     private void SetupLights()
     {
-        //所有可见光
+        //获取所有可见光
         NativeArray<VisibleLight> visibleLights = cullingResults.visibleLights;
 
         int dirLightCount = 0;
@@ -100,6 +118,9 @@ public class Lighting
 
         //从localToWorld矩阵的第三列获取光源的forward方向 然后取反
         dirLightDirections[index] = -visibleLight.localToWorldMatrix.GetColumn(2);
+
+        //存储阴影数据
+        shadows.ReserveDirectionalShadows(visibleLight.light, index);
     }
 
    
