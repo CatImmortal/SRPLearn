@@ -29,6 +29,16 @@ public class Shadows
     /// </summary>
     private static int dirShadowAtlasId = Shader.PropertyToID("_DirectionalShadowAtlas");
 
+    /// <summary>
+    /// 阴影转换矩阵的属性id
+    /// </summary>
+    private static int dirShadowMatricesId = Shader.PropertyToID("_DirShadowMatricesId");
+
+    /// <summary>
+    /// 阴影转换矩阵数组
+    /// </summary>
+    private static Matrix4x4[] dirShadowMatrices = new Matrix4x4[maxShadowedDirectionalLightCount];
+
     private const string bufferName = "Shadow";
 
     private CommandBuffer buffer = new CommandBuffer()
@@ -107,7 +117,7 @@ public class Shadows
     }
 
     /// <summary>
-    /// 渲染定向光阴影
+    /// 渲染所有方向光阴影
     /// </summary>
     private void RenderDirectionalShadows()
     {
@@ -134,10 +144,16 @@ public class Shadows
             RenderDirectionalShadows(i, split,tileSize);
         }
 
+        //渲染完所有方向光的阴影后 将阴影转换矩阵发给Shader
+        buffer.SetGlobalMatrixArray(dirShadowMatricesId, dirShadowMatrices);
+
         buffer.EndSample(bufferName);
         ExecuteBuffer();
     }
 
+    /// <summary>
+    /// 渲染单个方向光阴影
+    /// </summary>
     private void RenderDirectionalShadows(int index,int split,int tileSize)
     {
         //取出对应索引的数据
@@ -161,7 +177,11 @@ public class Shadows
 
         shadowDrawingSettings.splitData = splitData;
 
-        SetTileViewport(index, split, tileSize);
+        //设置图集分块
+       Vector2 offset = SetTileViewport(index, split, tileSize);
+
+        //获取从世界空间到阴影图块空间的转换矩阵
+        dirShadowMatrices[index] = ConvertToAtlasMatrix(projectionMatrix * viewMatrix, offset, split);
 
         //设置视图 投影矩阵
         buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
@@ -175,12 +195,22 @@ public class Shadows
     /// <summary>
     /// 调整渲染视口来渲染单个图块
     /// </summary>
-    private void SetTileViewport(int index, int split, int tileSize)
+    private Vector2 SetTileViewport(int index, int split, int tileSize)
     {
         //计算图块偏移
         Vector2 offset = new Vector2(index % split, index / split);
 
         //设置渲染视口 拆分为多个图块
         buffer.SetViewport(new Rect(offset.x * tileSize, offset.y * tileSize, tileSize, tileSize));
+
+        return offset;
+    }
+
+    /// <summary>
+    /// 获取从世界空间到阴影图块空间的转换矩阵
+    /// </summary>
+    private Matrix4x4 ConvertToAtlasMatrix(Matrix4x4 m,Vector2 offset,int split)
+    {
+        return m;
     }
 }
