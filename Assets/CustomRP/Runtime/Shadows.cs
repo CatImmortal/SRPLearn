@@ -70,7 +70,7 @@ public class Shadows
     }
 
     /// <summary>
-    /// 阴影渲染
+    /// 渲染阴影到阴影图集中
     /// </summary>
     public void Render()
     {
@@ -90,7 +90,7 @@ public class Shadows
     /// <summary>
     /// 存储可见光的阴影数据
     /// </summary>
-    public void ReserveDirectionalShadows(Light light,int visibleLightIndex)
+    public Vector2 ReserveDirectionalShadows(Light light,int visibleLightIndex)
     {
         if (shadowedDirectionalLightCount < maxShadowedDirectionalLightCount
             &&light.shadows != LightShadows.None
@@ -102,8 +102,16 @@ public class Shadows
             //并且 在阴影最大投射距离内有被该光源影响且需要投影的物体
 
             shadowedDirectionalLights[shadowedDirectionalLightCount] = new shadowedDirectionalLight() { VisibleLightIndex = visibleLightIndex };
+            
+            //用一个vector2 存储阴影强度和阴影图块的偏移
+            Vector2 result = new Vector2(light.shadowStrength, shadowedDirectionalLightCount);
+           
             shadowedDirectionalLightCount++;
+
+            return result;
         }
+
+        return Vector2.zero;
     }
 
 
@@ -211,6 +219,28 @@ public class Shadows
     /// </summary>
     private Matrix4x4 ConvertToAtlasMatrix(Matrix4x4 m,Vector2 offset,int split)
     {
+        //如果使用了反向Zbuffer
+        if (SystemInfo.usesReversedZBuffer)
+        {
+            m.m20 = -m.m20;
+            m.m21 = -m.m21;
+            m.m22 = -m.m22;
+            m.m23 = -m.m23;
+        }
+        //设置矩阵坐标
+        float scale = 1f / split;
+        m.m00 = (0.5f * (m.m00 + m.m30) + offset.x * m.m30) * scale;
+        m.m01 = (0.5f * (m.m01 + m.m31) + offset.x * m.m31) * scale;
+        m.m02 = (0.5f * (m.m02 + m.m32) + offset.x * m.m32) * scale;
+        m.m03 = (0.5f * (m.m03 + m.m33) + offset.x * m.m33) * scale;
+        m.m10 = (0.5f * (m.m10 + m.m30) + offset.y * m.m30) * scale;
+        m.m11 = (0.5f * (m.m11 + m.m31) + offset.y * m.m31) * scale;
+        m.m12 = (0.5f * (m.m12 + m.m32) + offset.y * m.m32) * scale;
+        m.m13 = (0.5f * (m.m13 + m.m33) + offset.y * m.m33) * scale;
+        m.m20 = 0.5f * (m.m20 + m.m30);
+        m.m21 = 0.5f * (m.m21 + m.m31);
+        m.m22 = 0.5f * (m.m22 + m.m32);
+        m.m23 = 0.5f * (m.m23 + m.m33);
         return m;
     }
 }

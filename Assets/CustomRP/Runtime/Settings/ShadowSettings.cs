@@ -20,6 +20,29 @@ public enum TextureSize
 public struct Directional
 {
     public TextureSize atlasSize;
+
+    /// <summary>
+    /// 阴影级联数量滑块
+    /// </summary>
+    [Range(1,4)]
+    public int CascadeCount;
+
+    [Range(0f,1f)]
+    public float cascadeRatio1;
+
+    [Range(0f, 1f)]
+    public float cascadeRatio2;
+
+    [Range(0f, 1f)]
+    public float cascadeRatio3;
+
+    public Vector3 CascadeRatios
+    {
+        get
+        {
+            return new Vector3(cascadeRatio1, cascadeRatio2, cascadeRatio3);
+        }
+    }
 }
 
 /// <summary>
@@ -35,9 +58,15 @@ public class ShadowSettings
 
     public Directional Directional = new Directional()
     {
-        atlasSize = TextureSize._1024
+        atlasSize = TextureSize._1024,
+        CascadeCount = 4,
+        cascadeRatio1 = 0.1f,
+        cascadeRatio2 = 0.25f,
+        cascadeRatio3 = 0.5f,
+        
     };
 }
+
 
 
 

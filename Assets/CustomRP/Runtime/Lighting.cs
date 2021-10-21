@@ -15,6 +15,7 @@ public class Lighting
     private static int dirLightCountId = Shader.PropertyToID("_DirectionalLightCount");
     private static int dirLightColorsId = Shader.PropertyToID("_DirectionalLightColors");
     private static int dirLightDirectionsId = Shader.PropertyToID("_DirectionalLightDirections");
+    private static int dirLightShadowDataId = Shader.PropertyToID("_DirLightShadowDataId");
 
     /// <summary>
     /// 最大可见方向光数量
@@ -30,6 +31,11 @@ public class Lighting
     /// 可见光的方向
     /// </summary>
     private static Vector4[] dirLightDirections = new Vector4[maxDirLightCount];
+
+    /// <summary>
+    /// 阴影的数据
+    /// </summary>
+    private Vector4[] dirLightShadowData = new Vector4[maxDirLightCount];
 
     private const string bufferName = "Lighting";
 
@@ -63,7 +69,7 @@ public class Lighting
         //发送光源数据给shader
         SetupLights();
 
-        //渲染阴影
+        //渲染阴影到阴影图集中
         shadows.Render();
 
         buffer.EndSample(bufferName);
@@ -107,10 +113,11 @@ public class Lighting
         buffer.SetGlobalInt(dirLightCountId, dirLightCount);
         buffer.SetGlobalVectorArray(dirLightColorsId, dirLightColors);
         buffer.SetGlobalVectorArray(dirLightDirectionsId, dirLightDirections);
+        buffer.SetGlobalVectorArray(dirLightShadowDataId, dirLightShadowData);
     }
 
     /// <summary>
-    /// 将可见的方向光光源数据存储到数组中
+    /// 将可见的方向光光源与阴影数据存储到数组中
     /// </summary>
     private void SetupDirectionalLight(int index,ref VisibleLight visibleLight)
     {
@@ -120,7 +127,7 @@ public class Lighting
         dirLightDirections[index] = -visibleLight.localToWorldMatrix.GetColumn(2);
 
         //存储阴影数据
-        shadows.ReserveDirectionalShadows(visibleLight.light, index);
+        dirLightShadowData[index] = shadows.ReserveDirectionalShadows(visibleLight.light, index);
     }
 
    
