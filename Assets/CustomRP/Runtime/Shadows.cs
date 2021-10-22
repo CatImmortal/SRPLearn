@@ -25,6 +25,11 @@ public class Shadows
     private const int maxShadowedDirectionalLightCount = 4;
 
     /// <summary>
+    /// 最大级联数量
+    /// </summary>
+    private const int maxCascades = 4;
+
+    /// <summary>
     /// 阴影图集的属性id
     /// </summary>
     private static int dirShadowAtlasId = Shader.PropertyToID("_DirectionalShadowAtlas");
@@ -37,7 +42,17 @@ public class Shadows
     /// <summary>
     /// 阴影转换矩阵数组
     /// </summary>
-    private static Matrix4x4[] dirShadowMatrices = new Matrix4x4[maxShadowedDirectionalLightCount];
+    private static Matrix4x4[] dirShadowMatrices = new Matrix4x4[maxShadowedDirectionalLightCount * maxCascades];
+
+    private static int cascadeCountId = Shader.PropertyToID("_CascadeCount");
+    private static int cascadeCullingSpheresId = Shader.PropertyToID("_CascadeCullingSpheresId");
+
+    /// <summary>
+    /// 级联包围球数据
+    /// </summary>
+    private static Vector4[] cascadeCullingSpheres = new Vector4[maxCascades];
+
+
 
     private const string bufferName = "Shadow";
 
@@ -104,7 +119,7 @@ public class Shadows
             shadowedDirectionalLights[shadowedDirectionalLightCount] = new shadowedDirectionalLight() { VisibleLightIndex = visibleLightIndex };
             
             //用一个vector2 存储阴影强度和阴影图块的偏移
-            Vector2 result = new Vector2(light.shadowStrength, shadowedDirectionalLightCount);
+            Vector2 result = new Vector2(light.shadowStrength,settings.Directional.CascadeCount * shadowedDirectionalLightCount);
            
             shadowedDirectionalLightCount++;
 
@@ -143,7 +158,25 @@ public class Shadows
         ExecuteBuffer();
 
         //要分隔的图块大小和数量
-        int split = shadowedDirectionalLightCount <= 1 ? 1 : 2;
+        int tiles = shadowedDirectionalLightCount * settings.Directional.CascadeCount;
+
+        int split;
+        if (tiles <= 1)
+        {
+            split = 1;
+        }
+        else
+        {
+            if (tiles <= 4)
+            {
+                split = 2;
+            }
+            else
+            {
+                split = 4;
+            }
+        }
+
         int tileSize = atlasSize / split;
 
         //遍历所有方向光进行逐光源的阴影渲染
@@ -170,34 +203,59 @@ public class Shadows
         //创建 阴影绘制设置 对象
         ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(cullingResults, light.VisibleLightIndex);
 
-        //获取视图 投影矩阵和裁剪投影对象信息
-        cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
-            light.VisibleLightIndex,
-            0,
-            1,
-            Vector3.zero,
-            tileSize,
-            0f,
-            out Matrix4x4 viewMatrix,
-            out Matrix4x4 projectionMatrix,
-            out ShadowSplitData splitData
-            );
+       
 
-        shadowDrawingSettings.splitData = splitData;
+        //得到级联阴影贴图需要的参数
+        int cascadeCount = settings.Directional.CascadeCount;
+        int tileOffset = index * cascadeCount;
+        Vector3 ratios = settings.Directional.CascadeRatios;
 
-        //设置图集分块
-       Vector2 offset = SetTileViewport(index, split, tileSize);
+        for (int i = 0; i < cascadeCount; i++)
+        {
+            //获取视图 投影矩阵和裁剪投影对象信息
+            cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
+                light.VisibleLightIndex,
+                i,
+                cascadeCount,
+                ratios,
+                tileSize,
+                0f,
+                out Matrix4x4 viewMatrix,
+                out Matrix4x4 projectionMatrix,
+                out ShadowSplitData splitData
+                );
 
-        //获取从世界空间到阴影图块空间的转换矩阵
-        dirShadowMatrices[index] = ConvertToAtlasMatrix(projectionMatrix * viewMatrix, offset, split);
+            //得到第一个光源的包围球数据
+            if (index == 0)
+            {
+                Vector4 cullingSphere = splitData.cullingSphere;
+                cullingSphere.w *= cullingSphere.w;
 
-        //设置视图 投影矩阵
-        buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
+                cascadeCullingSpheres[i] = cullingSphere;
+            }
 
-        ExecuteBuffer();
+            shadowDrawingSettings.splitData = splitData;
 
-        //渲染阴影到阴影图集中
-        context.DrawShadows(ref shadowDrawingSettings);
+            //调整图块索引，它等于光源的图块偏移加上级联的索引
+            int tileIndex = tileOffset + i;
+
+            //设置图集分块
+            Vector2 offset = SetTileViewport(tileIndex, split, tileSize);
+
+            //获取从世界空间到阴影图块空间的转换矩阵
+            dirShadowMatrices[tileIndex] = ConvertToAtlasMatrix(projectionMatrix * viewMatrix, offset, split);
+
+            //设置视图 投影矩阵
+            buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
+            ExecuteBuffer();
+
+            //渲染阴影到阴影图集中
+            context.DrawShadows(ref shadowDrawingSettings);
+        }
+
+
+
+       
     }
 
     /// <summary>
