@@ -14,13 +14,17 @@ float3 GetLighting(Surface surface,BRDF brdf,Light light)
 }
 
 //根据物体表面信息获取最终光照结果
-float3 GetLighting(Surface surface,BRDF brdf)
+float3 GetLighting(Surface surfaceWS,BRDF brdf)
 {
+    //获取表面阴影数据
+    ShadowData shadowData = GetShadowData(surfaceWS);
+
     //对所有可见方向光的照明结果进行累加，得到最终光照
     float3 color = 0.0;
     for(int i = 0;i < GetDirectionalLightCount();i++)
     {
-        color += GetLighting(surface,brdf,GetDirectionalLight(i,surface));
+        Light light = GetDirectionalLight(i,surfaceWS,shadowData);
+        color += GetLighting(surfaceWS,brdf,light);
     }
 
     return color;

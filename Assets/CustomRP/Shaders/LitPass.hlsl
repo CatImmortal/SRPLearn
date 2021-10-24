@@ -89,7 +89,7 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
     surface.metallic =  UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Metallic);
     surface.smoothness =  UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Smoothness);
     surface.viewDirection = normalize(_WorldSpaceCameraPos - input.positionWS);
-
+    surface.depth = -TransformWorldToView(input.positionWS).z;
 #if defined(_PREMULTIPLY_ALPHA)
     //获取BRDF数据 预乘透明度 使得带透明通道的纹理可以进行正常的线性插值
     BRDF brdf = GetBRDF(surface,true);

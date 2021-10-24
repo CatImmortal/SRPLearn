@@ -44,7 +44,14 @@ public class Shadows
     /// </summary>
     private static Matrix4x4[] dirShadowMatrices = new Matrix4x4[maxShadowedDirectionalLightCount * maxCascades];
 
+    /// <summary>
+    /// 级联数量的属性id
+    /// </summary>
     private static int cascadeCountId = Shader.PropertyToID("_CascadeCount");
+
+    /// <summary>
+    /// 级联保卫球的属性id
+    /// </summary>
     private static int cascadeCullingSpheresId = Shader.PropertyToID("_CascadeCullingSpheresId");
 
     /// <summary>
@@ -52,6 +59,10 @@ public class Shadows
     /// </summary>
     private static Vector4[] cascadeCullingSpheres = new Vector4[maxCascades];
 
+    /// <summary>
+    /// 阴影距离的属性Id
+    /// </summary>
+    private static int shadowDistanceId = Shader.PropertyToID("_ShadowDistance");
 
 
     private const string bufferName = "Shadow";
@@ -185,8 +196,15 @@ public class Shadows
             RenderDirectionalShadows(i, split,tileSize);
         }
 
-        //渲染完所有方向光的阴影后 将阴影转换矩阵发给Shader
+        //将级联数量和包围球数据发给shader
+        buffer.SetGlobalInt(cascadeCountId, settings.Directional.CascadeCount);
+        buffer.SetGlobalVectorArray(cascadeCullingSpheresId, cascadeCullingSpheres);
+
+        //将阴影转换矩阵发给Shader
         buffer.SetGlobalMatrixArray(dirShadowMatricesId, dirShadowMatrices);
+
+        //将最大阴影距离发给shader
+        buffer.SetGlobalFloat(shadowDistanceId, settings.MaxDistance);
 
         buffer.EndSample(bufferName);
         ExecuteBuffer();
