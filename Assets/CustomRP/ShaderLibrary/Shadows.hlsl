@@ -16,11 +16,17 @@ CBUFFER_START(_CustomShadows)
 int _CascadeCount;
 float4 _CascadeCullingSpheres[MAX_CASCADE_COUNT];
 
+//级联数据
+float4 _CascadeData[MAX_CASCADE_Count];
+
 //阴影转换矩阵
 float4x4 _DirectionalShadowMatrices[MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT * MAX_CASCADE_COUNT];
 
-//最大阴影距离
-float _ShadowDistance;
+
+//float _ShadowDistance;
+
+//阴影过渡距离
+float4 _ShadowDistanceFade;
 
 CBUFFER_END
 
@@ -40,11 +46,18 @@ struct ShadowData
     float strength;
 };
 
+//计算阴影过渡时的强度
+float FadedShadowStrength(float distance,float scale,float fade)
+{
+    return saturate((1.0-distance*scale)*fade);
+
+}
+
 //获取世界空间表面的阴影数据
 ShadowData GetShadowData(Surface surfaceWS)
 {
     ShadowData data;
-    data.strength = surfaceWS.depth < _ShadowDistance?1.0:0.0;
+    data.strength = FadedShadowStrength(surfaceWS.depth,_ShadowDistanceFade.x,_ShadowDistanceFade.y);
 
     int i;
     for(i = 0;i < _CascadeCount;i++)
@@ -53,6 +66,12 @@ ShadowData GetShadowData(Surface surfaceWS)
         float distanceSqr = DistanceSquared(surfaceWS.position,sphere.xyz);
         if(distanceSqr < sphere.w)
         {
+            if(i == _CascadeCount - 1)
+            {
+                //如果在最后一个级联的范围中，需要计算级联的过渡阴影强度
+                data.strength *= FadedShadowStrength(distanceSqr,_CascadeData[i].x,_ShadowDistanceFade.z);
+            }
+
             //如果物体表面到球心的平方距离小于球体半径的平方
             //就说明该物体在这层级联包围球中 得到合适的级联层级索引
             break;

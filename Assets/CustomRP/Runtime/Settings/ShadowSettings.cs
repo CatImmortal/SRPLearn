@@ -36,6 +36,12 @@ public struct Directional
     [Range(0f, 1f)]
     public float cascadeRatio3;
 
+    /// <summary>
+    /// 级联淡入值
+    /// </summary>
+    [Range(0.001f, 1f)]
+    public float cascadeFade;
+
     public Vector3 CascadeRatios
     {
         get
@@ -43,6 +49,7 @@ public struct Directional
             return new Vector3(cascadeRatio1, cascadeRatio2, cascadeRatio3);
         }
     }
+
 }
 
 /// <summary>
@@ -52,9 +59,19 @@ public struct Directional
 public class ShadowSettings
 {
    
-
-    [Min(0f)]
+    /// <summary>
+    /// 阴影
+    /// </summary>
+    [Min(0.001f)]
     public float MaxDistance = 100f;
+
+    /// <summary>
+    /// 阴影过渡距离
+    /// </summary>
+    [Range(0.001f,1f)]
+    public float distanceFade = 0.1f;
+
+
 
     public Directional Directional = new Directional()
     {
@@ -63,7 +80,7 @@ public class ShadowSettings
         cascadeRatio1 = 0.1f,
         cascadeRatio2 = 0.25f,
         cascadeRatio3 = 0.5f,
-        
+        cascadeFade = 0.1f,
     };
 }
 

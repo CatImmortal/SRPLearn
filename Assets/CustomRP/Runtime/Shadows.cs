@@ -59,11 +59,23 @@ public class Shadows
     /// </summary>
     private static Vector4[] cascadeCullingSpheres = new Vector4[maxCascades];
 
-    /// <summary>
-    /// 阴影距离的属性Id
-    /// </summary>
-    private static int shadowDistanceId = Shader.PropertyToID("_ShadowDistance");
 
+    //private static int shadowDistanceId = Shader.PropertyToID("_ShadowDistance");
+
+    /// <summary>
+    /// 阴影过渡距离的属性id
+    /// </summary>
+    private static int shadowDistanceFadeId = Shader.PropertyToID("_ShadowDistanceFade");
+
+    /// <summary>
+    /// 级联数据的属性id
+    /// </summary>
+    private static int cascadeDataId = Shader.PropertyToID("_CascadeData");
+
+    /// <summary>
+    /// 级联数据
+    /// </summary>
+    private static Vector4[] cascadeData = new Vector4[maxCascades];
 
     private const string bufferName = "Shadow";
 
@@ -200,11 +212,18 @@ public class Shadows
         buffer.SetGlobalInt(cascadeCountId, settings.Directional.CascadeCount);
         buffer.SetGlobalVectorArray(cascadeCullingSpheresId, cascadeCullingSpheres);
 
+        //将级联数据发给Shader
+        buffer.SetGlobalVectorArray(cascadeDataId, cascadeData);
+
         //将阴影转换矩阵发给Shader
         buffer.SetGlobalMatrixArray(dirShadowMatricesId, dirShadowMatrices);
 
-        //将最大阴影距离发给shader
-        buffer.SetGlobalFloat(shadowDistanceId, settings.MaxDistance);
+
+        //buffer.SetGlobalFloat(shadowDistanceId, settings.MaxDistance);
+
+        //将最大阴影距离，阴影过渡距离，级联过渡值发给Shader
+        float f = 1f - settings.Directional.cascadeFade;
+        buffer.SetGlobalVector(shadowDistanceFadeId,new Vector4(1f/settings.MaxDistance,1f/settings.distanceFade,1f/(1f - f * f)));
 
         buffer.EndSample(bufferName);
         ExecuteBuffer();
@@ -246,10 +265,7 @@ public class Shadows
             //得到第一个光源的包围球数据
             if (index == 0)
             {
-                Vector4 cullingSphere = splitData.cullingSphere;
-                cullingSphere.w *= cullingSphere.w;
-
-                cascadeCullingSpheres[i] = cullingSphere;
+                SetCascadeData(i, splitData.cullingSphere,tileSize);
             }
 
             shadowDrawingSettings.splitData = splitData;
@@ -265,16 +281,20 @@ public class Shadows
 
             //设置视图 投影矩阵
             buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
+
             ExecuteBuffer();
 
             //渲染阴影到阴影图集中
             context.DrawShadows(ref shadowDrawingSettings);
+
+
         }
 
 
 
        
     }
+
 
     /// <summary>
     /// 调整渲染视口来渲染单个图块
@@ -318,5 +338,18 @@ public class Shadows
         m.m22 = 0.5f * (m.m22 + m.m32);
         m.m23 = 0.5f * (m.m23 + m.m33);
         return m;
+    }
+
+    /// <summary>
+    /// 设置级联数据
+    /// </summary>
+    private static void SetCascadeData(int index, Vector4 cullingSphere,float tileSize)
+    {
+
+        cascadeData[index].x = 1f / cullingSphere.w;
+
+        //得到半径的平方值
+        cullingSphere.w *= cullingSphere.w;
+        cascadeCullingSpheres[index] = cullingSphere;
     }
 }
