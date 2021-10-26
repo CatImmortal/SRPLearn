@@ -17,7 +17,7 @@ int _CascadeCount;
 float4 _CascadeCullingSpheres[MAX_CASCADE_COUNT];
 
 //级联数据
-float4 _CascadeData[MAX_CASCADE_Count];
+float4 _CascadeData[MAX_CASCADE_COUNT];
 
 //阴影转换矩阵
 float4x4 _DirectionalShadowMatrices[MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT * MAX_CASCADE_COUNT];
@@ -93,7 +93,7 @@ float SampleDirectionalShadowAtlas(float3 positionSTS)
 }
 
 //计算阴影衰减
-float GetDirectionalShadowAttenuation(DirectionalShadowData data,Surface surfaceWS)
+float GetDirectionalShadowAttenuation(DirectionalShadowData data,ShadowData global,Surface surfaceWS,)
 {
     //片元完全被阴影覆盖则返回0，没有任何阴影则为1
 
@@ -103,8 +103,11 @@ float GetDirectionalShadowAttenuation(DirectionalShadowData data,Surface surface
         return 1.0;
     }
 
-    //将表面位置从世界空间转到阴影纹理空间，然后对阴影图集采样
-    float3 positionSTS = mul(_DirectionalShadowMatrices[data.tileIndex],float4(surfaceWS.position,1.0)).xyz;
+    //计算法线偏差
+    float3 normalBias = surfaceWS.normal * _CascadeData[global.cascadeIndex].y;
+
+    //加上法线偏移后的顶点位置 得到阴影纹理空间的新位置，然后对图集进行采样
+    float3 positionSTS = mul(_DirectionalShadowMatrices[data.tileIndex],float4(surfaceWS.position + normalBias,1.0)).xyz;
 
     float shadow = SampleDirectionalShadowAtlas(positionSTS);
     return lerp(1.0,shadow,data.strength);
