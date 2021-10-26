@@ -93,7 +93,7 @@ float SampleDirectionalShadowAtlas(float3 positionSTS)
 }
 
 //计算阴影衰减
-float GetDirectionalShadowAttenuation(DirectionalShadowData data,ShadowData global,Surface surfaceWS,)
+float GetDirectionalShadowAttenuation(DirectionalShadowData data,ShadowData global,Surface surfaceWS)
 {
     //片元完全被阴影覆盖则返回0，没有任何阴影则为1
 
