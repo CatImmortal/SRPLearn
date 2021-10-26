@@ -60,7 +60,7 @@
       "url": "https://packages.unity.cn"
     },
     "com.unity.textmeshpro": {
-      "version": "2.1.6",
+      "version": "2.1.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {

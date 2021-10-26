@@ -1,157 +1,143 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEditor;
+/// <summary>
+/// 扩展材质面板
+/// </summary>
 public class CustomShaderGUI : ShaderGUI
 {
-    private MaterialEditor matEditor;
-    private Object[] mats;
-    private MaterialProperty[] matProps;
-
-    private bool shoPresets;
-
-    private bool Clipping
+    MaterialEditor editor;
+    Object[] materials;
+    MaterialProperty[] properties;
+    bool showPresets;
+    //投影模式:开启投影、裁剪投影、抖动投影、关闭投影
+    enum ShadowMode
     {
-        set
-        {
-            SetProp("_Clipping", "_CLIPPING", value);
-        }
+        On, Clip, Dither, Off
     }
-
-    private bool PremultiplyAlpha
-    {
-        set
-        {
-            SetProp("_PremulAlpha", "_PREMULTIPLY_ALPHA", value);
-        }
-    }
-
-    private BlendMode SrcBlend
-    {
-        set
-        {
-            SetProp("_SrcBlend",(float)value);
-        }
-    }
-
-    private BlendMode DstBlend
-    {
-        set
-        {
-            SetProp("_DstBlend", (float)value);
-        }
-    }
-
-    private bool ZWrite
-    {
-        set
-        {
-            SetProp("_ZWrite", value ? 1f : 0f);
-        }
-    }
-
-    private RenderQueue RenderQueue
-    {
-        set
-        {
-            foreach (Material mat in mats)
-            {
-                mat.renderQueue = (int)value;
-            }
-        }
-    }
-
-  
 
     public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
     {
+        EditorGUI.BeginChangeCheck();
         base.OnGUI(materialEditor, properties);
-
-        matEditor = materialEditor;
-        mats = matEditor.targets;
-        matProps = properties;
+        editor = materialEditor;
+        materials = materialEditor.targets;
+        this.properties = properties;
 
         EditorGUILayout.Space();
-        shoPresets = EditorGUILayout.Foldout(shoPresets, "Presets", true);
-        if (shoPresets)
+        showPresets = EditorGUILayout.Foldout(showPresets, "Presets", true);
+        if (showPresets)
         {
             OpaquePreset();
             ClipPreset();
             FadePreset();
             TransparentPreset();
         }
+        //如果材质属性有被更改，检查阴影模式的设置状态
+        if (EditorGUI.EndChangeCheck())
+        {
+            SetShadowCasterPass();
+        }
     }
-
-    /// <summary>
-    /// 是否有此属性
-    /// </summary>
-    private bool HasProp(string name)
-    {
-        return FindProperty(name, matProps, false) != null;
-    }
-
     /// <summary>
     /// 设置材质属性
     /// </summary>
-    private bool SetProp(string name,float value)
+    /// <param name="name"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    bool SetProperty(string name, float value)
     {
-        MaterialProperty prop = FindProperty(name, matProps, false);
-        if (prop != null)
+        MaterialProperty property = FindProperty(name, properties, false);
+        if (property != null)
         {
-            prop.floatValue = value;
+            property.floatValue = value;
             return true;
         }
-
         return false;
     }
-
-
     /// <summary>
-    /// 设置关键字是否开启
+    /// 设置关键字状态
     /// </summary>
-    private void SetKeyword(string keyword, bool enabled)
+    /// <param name="keyword"></param>
+    /// <param name="enabled"></param>
+    void SetKeyword(string keyword, bool enabled)
     {
-        foreach (Material mat in mats)
+        if (enabled)
         {
-            if (enabled)
+            foreach (Material m in materials)
             {
-                mat.EnableKeyword(keyword);
+                m.EnableKeyword(keyword);
             }
-            else
+        }
+        else
+        {
+            foreach (Material m in materials)
             {
-                mat.DisableKeyword(keyword);
+                m.DisableKeyword(keyword);
             }
         }
     }
-
     /// <summary>
-    /// 设置材质属性
+    /// 相关属性存在时可以设置关键字开关
     /// </summary>
-    private void SetProp(string name,string keyword, bool value)
+    /// <param name="name"></param>
+    /// <param name="keyword"></param>
+    /// <param name="value"></param>
+    void SetProperty(string name, string keyword, bool value)
     {
-        if (SetProp(name, value ? 1f : 0f))
+        if (SetProperty(name, value ? 1f : 0f))
         {
             SetKeyword(keyword, value);
         }
-       
+    }
+    bool Clipping
+    {
+        set => SetProperty("_Clipping", "_CLIPPING", value);
     }
 
-    private bool PresetButton(string name)
+    bool PremultiplyAlpha
+    {
+        set => SetProperty("_PremulAlpha", "_PREMULTIPLY_ALPHA", value);
+    }
+
+    BlendMode SrcBlend
+    {
+        set => SetProperty("_SrcBlend", (float)value);
+    }
+
+    BlendMode DstBlend
+    {
+        set => SetProperty("_DstBlend", (float)value);
+    }
+
+    bool ZWrite
+    {
+        set => SetProperty("_ZWrite", value ? 1f : 0f);
+    }
+    RenderQueue RenderQueue
+    {
+        set
+        {
+            foreach (Material m in materials)
+            {
+                m.renderQueue = (int)value;
+            }
+        }
+    }
+    bool PresetButton(string name)
     {
         if (GUILayout.Button(name))
         {
-            matEditor.RegisterPropertyChangeUndo(name);
+           
+            editor.RegisterPropertyChangeUndo(name);
             return true;
         }
-
         return false;
     }
-
     /// <summary>
-    /// 设置为不透明渲染模式
+    /// 不透明材质默认设置
     /// </summary>
-    private void OpaquePreset()
+    void OpaquePreset()
     {
         if (PresetButton("Opaque"))
         {
@@ -163,11 +149,10 @@ public class CustomShaderGUI : ShaderGUI
             RenderQueue = RenderQueue.Geometry;
         }
     }
-
     /// <summary>
-    /// 设置为裁剪模式
+    /// 裁切材质默认设置
     /// </summary>
-    private void ClipPreset()
+    void ClipPreset()
     {
         if (PresetButton("Clip"))
         {
@@ -179,11 +164,10 @@ public class CustomShaderGUI : ShaderGUI
             RenderQueue = RenderQueue.AlphaTest;
         }
     }
-
     /// <summary>
-    /// 设置为透明渲染模式
+    /// 标准透明材质默认设置
     /// </summary>
-    private void FadePreset()
+    void FadePreset()
     {
         if (PresetButton("Fade"))
         {
@@ -195,13 +179,15 @@ public class CustomShaderGUI : ShaderGUI
             RenderQueue = RenderQueue.Transparent;
         }
     }
-
+    //如果shader的预乘属性不存在，不需要显示该渲染模式的按钮
+    bool HasProperty(string name) => FindProperty(name, properties, false) != null;
+    bool HasPremultiplyAlpha => HasProperty("_PremulAlpha");
     /// <summary>
-    /// 设置为预乘透明度的透明渲染模式
+    /// 受光正确的透明材质默认设置
     /// </summary>
-    private void TransparentPreset()
+    void TransparentPreset()
     {
-        if (HasProp("_PremulAlpha") &&  PresetButton("Transparent"))
+        if (HasPremultiplyAlpha && PresetButton("Transparent"))
         {
             Clipping = false;
             PremultiplyAlpha = true;
@@ -209,6 +195,34 @@ public class CustomShaderGUI : ShaderGUI
             DstBlend = BlendMode.OneMinusSrcAlpha;
             ZWrite = false;
             RenderQueue = RenderQueue.Transparent;
+        }
+    }
+
+    ShadowMode Shadows
+    {
+        set
+        {
+            if (SetProperty("_Shadows", (float)value))
+            {
+                SetKeyword("_SHADOWS_CLIP", value == ShadowMode.Clip);
+                SetKeyword("_SHADOWS_DITHER", value == ShadowMode.Dither);
+            }
+        }
+    }
+    /// <summary>
+    /// 设置材质的ShadowCaster pass块是否启用
+    /// </summary>
+    void SetShadowCasterPass()
+    {
+        MaterialProperty shadows = FindProperty("_Shadows", properties, false);
+        if (shadows == null || shadows.hasMixedValue)
+        {
+            return;
+        }
+        bool enabled = shadows.floatValue < (float)ShadowMode.Off;
+        foreach (Material m in materials)
+        {
+            m.SetShaderPassEnabled("ShadowCaster", enabled);
         }
     }
 }

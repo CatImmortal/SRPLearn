@@ -1,20 +1,22 @@
-﻿#if UNITY_EDITOR
-
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
-
-
+/// <summary>
+/// 相机渲染管理类
+/// </summary>
 public partial class CameraRenderer
 {
-    /// <summary>
-    /// SRP不支持的Shader Pass
-    /// </summary>
-    private static ShaderTagId[] legacyShaderTagIds =
-    {
+    partial void DrawUnsupportedShaders();
+    partial void DrawGizmos();
+    partial void PrepareForSceneWindow();
+
+    partial void PrepareBuffer();
+#if UNITY_EDITOR
+    //SRP不支持的着色器标签类型
+    static ShaderTagId[] legacyShaderTagIds = {
         new ShaderTagId("Always"),
         new ShaderTagId("ForwardBase"),
         new ShaderTagId("PrepassBase"),
@@ -22,60 +24,37 @@ public partial class CameraRenderer
         new ShaderTagId("VertexLMRGBM"),
         new ShaderTagId("VertexLM"),
     };
+    //绘制成使用错误材质的粉红颜色
+    static Material errorMaterial;
+
+    string SampleName { get; set; }
 
     /// <summary>
-    /// 表示绘制错误的粉红色材质
+    /// 绘制SRP不支持的内置shader类型
     /// </summary>
-    private static Material errorMat;
-
-    /// <summary>
-    /// 在Game视图绘制的几何体也绘制到Scene视图
-    /// </summary>
-    private void PrepareForSceneWindow()
+    partial void DrawUnsupportedShaders()
     {
-        if (camera.cameraType == CameraType.SceneView)
+        //不支持的shaderTag类型我们使用错误材质专用shader来渲染(粉色颜色)
+        if (errorMaterial == null)
         {
-            ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+            errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
         }
-    }
-
-    /// <summary>
-    /// 在缓冲区执行前调用
-    /// </summary>
-    private void PrepareBuffer()
-    {
-        Profiler.BeginSample("Editor Only");
-        buffer.name = sampleName = camera.name;
-        Profiler.EndSample();
-    }
-
-    /// <summary>
-    /// 绘制SRP不支持的Shader
-    /// </summary>
-    private void DrawUnsupportedShaders()
-    {
-        if (errorMat == null)
-        {
-            errorMat = new Material(Shader.Find("Hidden/InternalErrorShader"));
-        }
-
-        DrawingSettings ds = new DrawingSettings(legacyShaderTagIds[0], new SortingSettings(camera));
-        ds.overrideMaterial = errorMat;  //不支持的Shader绘制成粉色
-
+         
+        //数组第一个元素用来构造DrawingSettings的时候设置
+        var drawingSettings = new DrawingSettings(legacyShaderTagIds[0], new SortingSettings(camera))
+        {overrideMaterial = errorMaterial };
         for (int i = 1; i < legacyShaderTagIds.Length; i++)
         {
-            ds.SetShaderPassName(i, legacyShaderTagIds[i]);
+            //遍历数组逐个设置着色器的PassName，从i=1开始
+            drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
         }
-
-        FilteringSettings fs = FilteringSettings.defaultValue;
-
-        context.DrawRenderers(cullingResults, ref ds, ref fs);
+        //使用默认设置即可，反正画出来的都是错误的
+        var filteringSettings = FilteringSettings.defaultValue;
+        //绘制不支持的shaderTag类型的物体
+        context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
     }
-
-    /// <summary>
-    /// 绘制辅助线框
-    /// </summary>
-    private void DrawGizmos()
+    //绘制DrawGizmos
+    partial void DrawGizmos()
     {
         if (Handles.ShouldRenderGizmos())
         {
@@ -83,9 +62,30 @@ public partial class CameraRenderer
             context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
         }
     }
+    /// <summary>
+    /// 在Game视图绘制的几何体也绘制到Scene视图中
+    /// </summary>
+    partial void PrepareForSceneWindow()
+    {
+        if (camera.cameraType == CameraType.SceneView)
+        {
+            //如果切换到了Scene视图，调用此方法完成绘制
+            ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+        }
+    }
 
+    /// <summary>
+    /// 设置buffer缓冲区的名字
+    /// </summary>
+    partial void PrepareBuffer()
+    {
+        //设置一下只有在编辑器模式下才分配内存
+        Profiler.BeginSample("Editor Only");
+        buffer.name = SampleName = camera.name;
+        Profiler.EndSample();
+    }
+#else
+	const string SampleName = bufferName;
 
-}
 #endif
-
-
+}

@@ -2,39 +2,23 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-
 /// <summary>
-/// 自定义渲染管线的Asset
+/// 自定义渲染管线资产
 /// </summary>
-[CreateAssetMenu(menuName = "Rendering/CreateCustomRenderPipeline")]
+//该标签会在你在Project下右键->Asset/Create菜单中添加一个新的子菜单
+[CreateAssetMenu(menuName ="Rendering/CreateCustomRenderPipeline")]
 public class CustomRenderPipelineAsset : RenderPipelineAsset
 {
-    /// <summary>
-    /// 是否使用动态合批
-    /// </summary>
+    //设置批处理启用状态
     [SerializeField]
-    private bool useDynamicBatching = true;
-
-    /// <summary>
-    /// 是否使用GPU实例化
-    /// </summary>
+    bool useDynamicBatching = true, useGPUInstancing = true, useSRPBatcher = true;
+    //阴影配置
     [SerializeField]
-    private bool useGPUInstancing = true;
+    ShadowSettings shadows = default;
 
-    /// <summary>
-    /// 是否使用SRPBatcher
-    /// </summary>
-    [SerializeField]
-    private bool useSRPBatcher = true;
-
-    /// <summary>
-    /// 阴影设置
-    /// </summary>
-    [SerializeField]
-    private ShadowSettings shadows = default;
-
+    //重写抽象方法，需要返回一个RenderPipeline实例对象
     protected override RenderPipeline CreatePipeline()
     {
-        return new CustomRenderPipeline(useDynamicBatching,useGPUInstancing,useSRPBatcher,shadows);
+        return new CustomRenderPipeline(useDynamicBatching, useGPUInstancing, useSRPBatcher, shadows);
     }
 }
